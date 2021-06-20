@@ -1,0 +1,268 @@
+#!/bin/bash
+#
+# passage - age based password/secrets manager
+# Original script is from https://github.com/dylanaraps/pash
+# and the credit goes to https://github.com/biox/pa for using age
+# for the encryption.
+#
+# This is my version for my own experimentation and implementation.
+
+# this is where we store our encrypted entries
+PASSAGE_DIR=(~/.passage)
+privkey=(~/.config/age/chrisswanda.priv.age) #This is my default age credential storage location
+
+pw_show() {
+    age -i $privkey --decrypt "$1.age" 2>/dev/null ||
+        die "Could not decrypt $1.age"
+}
+
+pw_copy() {
+    # : "${PAGE_CLIP:=xclip -sel c}"
+    #MacOS doesn't use xclip natively, using pbcopy
+    : "${PAGE_CLIP:=pbcopy}"
+
+    pw_show "$1" | $PAGE_CLIP
+
+    # Wait in the background for the password timeout and
+    # clear the clipboard when the timer runs out.
+    #
+    # If the 'sleep' fails, kill the script. This is the
+    # simplest method of aborting from a subshell.
+    [ "$PAGE_TIMEOUT" != off ] && {
+        printf 'Clearing clipboard in %s seconds.\n' "${PAGE_TIMEOUT:=30}"
+
+        sleep "$PAGE_TIMEOUT" || kill 0
+        $PAGE_CLIP </dev/null
+    } &
+}
+
+pw_list() {
+    find . -type f -name \*.age | sed 's/..//;s/\.age$//'
+}
+
+pw_tree() {
+    command -v tree >/dev/null 2>&1 ||
+        die "'tree' command not found"
+
+    tree --noreport | sed 's/\.age$//'
+}
+
+pw_add() {
+    name=$1
+
+    if yn "Generate a password?"; then
+
+        pass=$(LC_ALL=C tr -dc "${PASSAGE_PATTERN:-_A-Z-a-z-0-9}" < /dev/urandom |
+            dd ibs=1 obs=1 count="${PASSAGE_LENGTH:-17}" 2>/dev/null)
+
+    else
+        # 'sread()' is a simple wrapper function around 'read'
+        # to prevent user input from being printed to the terminal.
+        sread pass  "Enter password"
+        sread pass2 "Enter password (again)"
+
+        [ "$pass" = "$pass2" ] || die "Passwords do not match"
+    fi
+
+    [ "$pass" ] || die "Failed to generate a password"
+
+    # Mimic the use of an array for storing arguments by... using
+    # the function's argument list. This is very apt isn't it?
+    set -- -c
+
+    age -r "$pubkey" -o "$name.age" <<-EOF &&
+		$pass
+	EOF
+    printf '%s\n' "Saved '$name' to the store."
+}
+
+pw_edit() {
+    name=$1
+
+    [ -f "$name.age" ] || die "Failed to access $name"
+
+
+    # used install here.  Section #5 of this page helped - https://www.baeldung.com/linux/create-destination-directory
+    install $PASSAGE_DIR/$name.age $TMPDIR
+    trap 'rm -rf $tmpdir' EXIT
+    tmpfile="$TMPDIR*.age"
+
+    age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" 2>/dev/null > "$tmpfile" ||
+        die "Could not decrypt $1.age"
+
+    "${EDITOR:-vi}" "$tmpfile"
+
+    [ -f "$tmpfile" ] || die "New password not saved"
+
+    age -r "$pubkey" -o "$name.age" "$tmpfile"
+
+    rm $tmpfile
+}
+
+pw_del() {
+    yn "Delete pass file '$1'?" && {
+        rm -f "$1.age"
+
+        rmdir -p "${1%/*}" 2>/dev/null || :
+    }
+}
+
+pw_git() {
+    case $1 in
+        git)
+            cd "$PASSAGE_DIR"
+            shift
+            git "$@" #note adding @1 and @2 to the statements below
+        ;;
+
+        *)
+            command passage "$@"
+        ;;
+    esac
+}
+
+pw_gen() {
+    if yn "$PASSAGE_DIR not detected, generate a new one?"; then
+        mkdir -p ~/.passage
+        # use age-keygen -o ~/output for standard key pair that is not encrypted.
+        # Below is a password protected private key.
+        # I sync my encrypted private key to different machines.
+        age-keygen | age -p > $privkey
+    fi
+
+    # investigate maybe putting passwords into Keychain
+    # security add-generic-password -s "Passage Password" -a "user.name" -p
+    # PASSWORD=`security find-generic-password -s "Passage Password" -a "user.name" -w`
+}
+
+yn() {
+    printf '%s [y/n]: ' "$1"
+
+    # Enable raw input to allow for a single byte to be read from
+    # stdin without needing to wait for the user to press Return.
+    stty -icanon
+
+    # Read a single byte from stdin using 'dd'. POSIX 'read' has
+    # no support for single/'N' byte based input from the user.
+    answer=$(dd ibs=1 count=1 2>/dev/null)
+
+    # Disable raw input, leaving the terminal how we *should*
+    # have found it.
+    stty icanon
+
+    printf '\n'
+
+    # Handle the answer here directly, enabling this function's
+    # return status to be used in place of checking for '[yY]'
+    # throughout this program.
+    glob "$answer" '[yY]'
+}
+
+sread() {
+    printf '%s: ' "$2"
+
+    # Disable terminal printing while the user inputs their
+    # password. POSIX 'read' has no '-s' flag which would
+    # effectively do the same thing.
+    stty -echo
+    read -r "$1"
+    stty echo
+
+    printf '\n'
+}
+
+glob() {
+    # This is a simple wrapper around a case statement to allow
+    # for simple string comparisons against globs.
+    #
+    # Example: if glob "Hello World" '* World'; then
+    #
+    # Disable this warning as it is the intended behavior.
+    # shellcheck disable=2254
+    case $1 in $2) return 0; esac; return 1
+}
+
+die() {
+    printf 'error: %s.\n' "$1" >&2
+    exit 1
+}
+
+usage() { printf %s "\
+- show [name]    - Show password for an entry.
+- copy [name]    - Copy password to clipboard. Clears in 30 seconds.
+- list           - List all entries.
+- tree           - List all entries in a tree.
+- add  [name]    - Create a new password, randomly generated.
+- edit [name]    - Edit a password entry using your editor.
+- del  [name]    - Delete a password entry.
+- git  [command] - push, pull, status
+"
+exit 0
+}
+
+main() {
+    : "${PASSAGE_DIR:=${XDG_DATA_HOME:=$HOME/}.passage}"
+
+    command -v age >/dev/null 2>&1 ||
+        die "age not found, install per https://github.com/FiloSottile/age"
+
+    command -v age-keygen >/dev/null 2>&1 ||
+        die "age-keygen not found, install per https://github.com/FiloSottile/age"
+
+    mkdir -p "$PASSAGE_DIR" ||
+        die "Couldn't create password directory"
+
+    cd "$PASSAGE_DIR" ||
+        die "Can't access password directory"
+
+    glob "$1" '[acdes]*' && [ -z "$2" ] &&
+        die "Missing [name] argument"
+
+    glob "$1" '[cds]*' && [ ! -f "$2.age" ] &&
+        die "Pass file '$2' doesn't exist"
+
+    glob "$1" 'a*' && [ -f "$2.age" ] &&
+        die "Pass file '$2' already exists"
+
+    glob "$2" '*/*' && glob "$2" '*../*' &&
+        die "Category went out of bounds"
+
+    glob "$2" '/*' &&
+        die "Category can't start with '/'"
+
+    glob "$2" '*/*' && { mkdir -p "${2%/*}" ||
+        die "Couldn't create category '${2%/*}'"; }
+
+    # Restrict permissions of any new files to
+    # only the current user.
+    umask 077
+
+    [ -f $privkey ] || pw_gen
+    pubkey=$(cat ~/.config/age/chrisswanda.pub.age)
+
+    # Ensure that we leave the terminal in a usable
+    # state on exit or Ctrl+C.
+    [ -t 1 ] && trap 'stty echo icanon' INT EXIT
+
+    case $1 in
+        show) pw_show  "$2"       ;;
+        copy) pw_copy  "$2"       ;;
+        list) pw_list             ;;
+        tree) pw_tree             ;;
+        add)  pw_add   "$2"       ;;
+        edit) pw_edit  "$2"       ;;
+        del)  pw_del   "$2"       ;;
+        git)  pw_git   "$1" "$2"  ;;
+        *)    usage               ;;
+    esac
+}
+
+# Ensure that debug mode is never enabled to
+# prevent the password from leaking.
+set +x
+
+# Ensure that globbing is globally disabled
+# to avoid insecurities with word-splitting.
+set -f
+
+[ "$1" ] || usage && main "$@"
