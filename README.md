@@ -20,6 +20,7 @@ I'm also throwing in a few scripts that I have used in the past for age encrypti
 
 - `age`
 - `age-keygen`
+- `oathtool` 
 
 ## Usage
 
