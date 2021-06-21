@@ -40,6 +40,27 @@ pw_list() {
     tree -C --noreport | sed 's/\.age$//'
 }
 
+pw_otp() {
+    name=$1
+
+    [ -f "$name.age" ] || die "Failed to access $name"
+
+    install $PASSAGE_DIR/$name.age $TMPDIR
+    trap 'rm -rf $tmpdir' EXIT
+    tmpfile="$TMPDIR*.age"
+
+    age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" 2>/dev/null > "$tmpfile" ||
+        die "Could not decrypt $1.age"
+
+    PASSAGE_OTP=$(cat "$tmpfile" | grep otpauth | awk -F '[=|&]' '{print $2}')
+
+    oathtool --totp -b -d 6 $PASSAGE_OTP
+
+    rm $tmpfile
+
+    unset PASSAGE_OTP
+}
+
 pw_add() {
     name=$1
 
@@ -179,6 +200,7 @@ die() {
 usage() { printf %s "\
 - show [name]    - Show password for an entry.
 - copy [name]    - Copy password to clipboard. Clears in 30 seconds.
+- otp  [name]    - Copy OTP code to clipbaord. Clears in 30 seconds.
 - list           - List all entries.
 - add  [name]    - Create a new password, randomly generated.
 - edit [name]    - Edit a password entry using your editor.
@@ -235,6 +257,7 @@ main() {
     case $1 in
         show) pw_show  "$2"       ;;
         copy) pw_copy  "$2"       ;;
+        otp)  pw_otp   "$2"       ;;
         list) pw_list             ;;
         add)  pw_add   "$2"       ;;
         edit) pw_edit  "$2"       ;;
