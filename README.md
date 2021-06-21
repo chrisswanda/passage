@@ -28,7 +28,6 @@ Examples:
   passage show github
   passage copy Travel/Uber
   passage list
-  passage tree
   passage add Web/gmail
   passage edit Finance/ETrade
   passage del Social/Facebook
@@ -41,7 +40,6 @@ USAGE
 - show [name]    - Show password for an entry.
 - copy [name]    - Copy password to clipboard. Clears in 30 seconds.
 - list           - List all entries.
-- tree           - List all entries in a tree.
 - add  [name]    - Create a new password, randomly generated.
 - edit [name]    - Edit a password entry with vim.
 - del  [name]    - Delete a password entry.

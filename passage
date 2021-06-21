@@ -37,14 +37,7 @@ pw_copy() {
 }
 
 pw_list() {
-    find . -type f -name \*.age | sed 's/..//;s/\.age$//'
-}
-
-pw_tree() {
-    command -v tree >/dev/null 2>&1 ||
-        die "'tree' command not found"
-
-    tree --noreport | sed 's/\.age$//'
+    tree -C --noreport | sed 's/\.age$//'
 }
 
 pw_add() {
@@ -73,7 +66,7 @@ pw_add() {
     age -r "$pubkey" -o "$name.age" <<-EOF &&
 		$pass
 	EOF
-    printf '%s\n' "Saved '$name' to the store."
+    printf '%s\n' "Saved '$name' to the password store."
 }
 
 pw_edit() {
@@ -112,7 +105,7 @@ pw_git() {
         git)
             cd "$PASSAGE_DIR"
             shift
-            git "$@" #note adding @1 and @2 to the statements below
+            git "$@"
         ;;
 
         *)
@@ -191,11 +184,10 @@ usage() { printf %s "\
 - show [name]    - Show password for an entry.
 - copy [name]    - Copy password to clipboard. Clears in 30 seconds.
 - list           - List all entries.
-- tree           - List all entries in a tree.
 - add  [name]    - Create a new password, randomly generated.
 - edit [name]    - Edit a password entry using your editor.
 - del  [name]    - Delete a password entry.
-- git  [command] - push, pull, status
+- git  [command] - push, pull, status, add, commit
 "
 exit 0
 }
@@ -248,11 +240,10 @@ main() {
         show) pw_show  "$2"       ;;
         copy) pw_copy  "$2"       ;;
         list) pw_list             ;;
-        tree) pw_tree             ;;
         add)  pw_add   "$2"       ;;
         edit) pw_edit  "$2"       ;;
         del)  pw_del   "$2"       ;;
-        git)  pw_git   "$1" "$2"  ;;
+        git)  pw_git   "$@"       ;;
         *)    usage               ;;
     esac
 }
