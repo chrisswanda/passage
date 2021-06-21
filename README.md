@@ -52,7 +52,7 @@ USAGE
 I have included something that resembles autocomplete.
 ```
 $ passage {tab}
-Travel/ Web/ Social/ Foo/ add  copy  del  edit  git  list  show  tree
+Travel/ Web/ Social/ Foo/ add  copy  del  edit  git  list  otp  show
 ```
 Add this to your autocomplete directory.
 
