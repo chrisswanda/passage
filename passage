@@ -19,9 +19,9 @@ pw_show() {
 pw_copy() {
     # : "${PAGE_CLIP:=xclip -sel c}"
     #MacOS doesn't use xclip natively, using pbcopy
-    : "${PAGE_CLIP:=pbcopy}"
 
-    pw_show "$1" | $PAGE_CLIP
+    pw_show $1 | head -n 1 | tr -d '\n' | pbcopy ||
+        die "Could not copy $1.age"
 
     # Wait in the background for the password timeout and
     # clear the clipboard when the timer runs out.
@@ -74,7 +74,6 @@ pw_edit() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
-
     # used install here.  Section #5 of this page helped - https://www.baeldung.com/linux/create-destination-directory
     install $PASSAGE_DIR/$name.age $TMPDIR
     trap 'rm -rf $tmpdir' EXIT
@@ -123,9 +122,6 @@ pw_gen() {
         age-keygen | age -p > $privkey
     fi
 
-    # investigate maybe putting passwords into Keychain
-    # security add-generic-password -s "Passage Password" -a "user.name" -p
-    # PASSWORD=`security find-generic-password -s "Passage Password" -a "user.name" -w`
 }
 
 yn() {
