@@ -93,13 +93,10 @@ You can change the password length
 And you can set your password characters
 # Password pattern:  export PASSAGE_PATTERN=_A-Z-a-z-0-9
 ```
-Or you can set it to whatever directory you want:
-```sh
-export PASSAGE_DIR=~/.local/some_other_dir
-```
-### Any other environment variables?
 
-You can just drop into your $PASSAGE_DIR, and merely just rename the file.  `$mv test_file.age new_test_file.age`
+### How can I rename my passwords?
+
+You can just drop into your $PASSAGE_DIR, and merely just rename the file.  `$mv test_file.age new_test_file.age` Your passwords are merely just files stored in a directory, so use any POSIX commands that you would use to manage any files normally.  Do not forget to name your files with an *.age extention.  
 
 ### How can I extend `passage`?
 
