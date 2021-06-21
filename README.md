@@ -43,17 +43,17 @@ USAGE
 - add  [name]    - Create a new password, randomly generated.
 - edit [name]    - Edit a password entry with vim.
 - del  [name]    - Delete a password entry.
-- git  [command] - push, pull, status
+- git  [command] - push, pull, status, add, commit
 ```
 
 I have included something that resembles autocomplete.
 ```
-$passage {tab}
-add  copy  del  edit  git  list  show  tree
+$ passage {tab}
+Travel/ Web/ Social/ Foo/ add  copy  del  edit  git  list  show  tree
 ```
 Add this to your autocomplete directory.
 
-`$cp passage_autocomplete /usr/local/etc/bash_completion.d/passage_autocomplete`
+`$ cp passage_autocomplete /usr/local/etc/bash_completion.d/passage_autocomplete`
 
 Then you can source it `$source /usr/local/etc/bash_completion.d/passage_autocomplete`
 
@@ -67,6 +67,35 @@ or add it to your `~.bashrc`
 ### Where are passwords stored?
 
 The passwords are stored in `age` encrypted files located at `${XDG_DATA_HOME:=$HOME/}.passage}`.
+
+### How does the copy command work?
+
+The copy command takes the very first line of your passage entry, and copies it to your clipboard.
+
+For example, here is an entry for Foo/bar
+
+```
+$ passage show Foo/bar
+Enter passphrase for identity file "{your age private key location}":
+4cWLle2RB2hPDFMkw
+login: my_user_name
+URL: www.example.com
+Notes: free form notes
+
+Recovery keys:
+blah
+cruft
+things
+```
+When you run the `copy` command:
+
+```
+$ passage copy Foo/bar
+Enter passphrase for identity file "{your age private key location}":
+Clearing clipboard in 30 seconds.
+
+$ 4cWLle2RB2hPDFMkw
+```
 
 ### How do I change the password store location?
 
@@ -84,7 +113,7 @@ export PASSAGE_DIR=~/.local/some_other_dir
 
 ### Any other environment variables?
 
-```sh
+```
 You can change the password length
 # Password length:   export PASSAGE_LENGTH=21
 
@@ -94,7 +123,7 @@ And you can set your password characters
 
 ### How can I rename my passwords?
 
-You can just drop into your $PASSAGE_DIR, and merely just rename the file.  `$mv test_file.age new_test_file.age` Your passwords are merely just files stored in a directory, so use any POSIX commands that you would use to manage any files normally.  Do not forget to name your files with an *.age extention.  
+You can just drop into your $PASSAGE_DIR, and merely just rename the file.  `$mv test_file.age new_test_file.age` Your passwords are just files stored in a directory, so use any POSIX commands that you would use to manage any files normally.  Do not forget to name your files with an *.age extention.  
 
 ### How can I extend `passage`?
 
@@ -115,4 +144,22 @@ passage() {
     esac
 }
 ```
+
+### What if I want to try out your version of `passage`?
+
+Just note that I made this for my MacOS environment.  If you are using some other linux distro, you will need to make a few tweaks.
+
+- For pw_edit(), I am copying to my `$TMPDIR` since MacOS does not have a `/dev/shm` and I sure as hell don't want to make a ram drive.
+- For pw_copy(), I am using `pbcopy`.  For your linux environment, you can use `xclip`.
+- I am using a password protected private key for my age credentials.  Granted, my hard drive is encrypted and if someone is on my local machine, I have bigger issues.  But, since I sync `~/.config/age` to my personal git repo, I figured might as well keep this key protected since age does not offer forward security.  To generate your password protected age credentials use `age-keygen | age -p > private_key`.
+```
+    age-keygen | age -p > ~/.config/age/username.priv.key
+
+    Public key: age16wm8r7a6hzghjcqpze4302jwthvwrux46ud78zj9fsjn4c9eyp3qljm0gn
+    Enter passphrase (leave empty to autogenerate a secure one): xxxxxxxx
+    Confirm passphrase: xxxxxxxx
+```
+   I take the output of my public key and put it into a file named username.pub.key and put it in my ~/.config/age directory.
+
+ ```echo "age16wm8r7a6hzghjcqpze4302jwthvwrux46ud78zj9fsjn4c9eyp3qljm0gn" > ~/.config/age/username.pub.key```
 
