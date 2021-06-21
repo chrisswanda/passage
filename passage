@@ -19,9 +19,9 @@ pw_show() {
 pw_copy() {
     # : "${PAGE_CLIP:=xclip -sel c}"
     #MacOS doesn't use xclip natively, using pbcopy
-    : "${PAGE_CLIP:=pbcopy}"
 
-    pw_show "$1" | $PAGE_CLIP
+    age -i $privkey --decrypt "$1.age" 2>/dev/null | head -n 1 | tr -d '\n' | pbcopy ||
+        die "Could not copy $1.age"
 
     # Wait in the background for the password timeout and
     # clear the clipboard when the timer runs out.
