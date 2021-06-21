@@ -27,6 +27,7 @@ Examples:
 ```
   passage show github
   passage copy Travel/Uber
+  passage otp  Development/Github
   passage list
   passage add Web/gmail
   passage edit Finance/ETrade
@@ -39,6 +40,7 @@ USAGE
 
 - show [name]    - Show password for an entry.
 - copy [name]    - Copy password to clipboard. Clears in 30 seconds.
+- otp  [name]    - Copy OTP to clipboard. Clears in 30 seconds.
 - list           - List all entries.
 - add  [name]    - Create a new password, randomly generated.
 - edit [name]    - Edit a password entry with vim.
