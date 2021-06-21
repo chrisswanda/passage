@@ -84,6 +84,7 @@ Enter passphrase for identity file "{your age private key location}":
 login: my_user_name
 URL: www.example.com
 Notes: free form notes
+otpauth://totp/ACME%20Co:john@example.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
 
 Recovery keys:
 blah
