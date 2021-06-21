@@ -54,7 +54,15 @@ pw_otp() {
 
     PASSAGE_OTP=$(cat "$tmpfile" | grep otpauth | awk -F '[=|&]' '{print $2}')
 
-    oathtool --totp -b -d 6 $PASSAGE_OTP
+    oathtool --totp -b -d 6 $PASSAGE_OTP | tr -d '\n'| pbcopy ||
+        die "Could not copy $1.age otp"
+
+    [ "$PAGE_TIMEOUT" != off ] && {
+        printf 'Clearing clipboard in %s seconds.\n' "${PAGE_TIMEOUT:=30}"
+
+        sleep "$PAGE_TIMEOUT" || kill 0
+        $PAGE_CLIP </dev/null
+    } &
 
     rm $tmpfile
 
