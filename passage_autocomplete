@@ -76,7 +76,7 @@ _passage()
 {
 	COMPREPLY=()
 	local cur="${COMP_WORDS[COMP_CWORD]}"
-	local commands="add  copy  del  edit  git  list  show  tree"
+	local commands="show  copy  list  add  edit  del  git"
 	if [[ $COMP_CWORD -gt 1 ]]; then
 		local lastarg="${COMP_WORDS[$COMP_CWORD-1]}"
 		case "${COMP_WORDS[1]}" in
