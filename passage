@@ -95,10 +95,7 @@ pw_edit() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
-    # # used install here.  Section #5 of this page helped - https://www.baeldung.com/linux/create-destination-directory
-    install -d $PASSAGE_DIR/$name.age $TMPDIR
-    trap 'rm -rf $TMPDIR*.age' EXIT
-    tmpfile="$TMPDIR*.age"
+    tmpfile="$(mktemp)"
 
     age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" 2>/dev/null > "$tmpfile" ||
         die "Could not decrypt $1.age"
