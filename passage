@@ -23,11 +23,6 @@ pw_copy() {
     pw_show $1 | head -n 1 | tr -d '\n' | pbcopy ||
         die "Could not copy $1.age"
 
-    # Wait in the background for the password timeout and
-    # clear the clipboard when the timer runs out.
-    #
-    # If the 'sleep' fails, kill the script. This is the
-    # simplest method of aborting from a subshell.
     [ "$PAGE_TIMEOUT" != off ] && {
         printf 'Clearing clipboard in %s seconds.\n' "${PAGE_TIMEOUT:=30}"
 
@@ -47,6 +42,8 @@ pw_otp() {
 
     PASSAGE_OTP=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth | awk -F '[=|&]' '{print $2}') ||
         die "Could not decrypt $1.age"
+
+    trap "unset PASSAGE_OTP" EXIT
 
     oathtool --totp -b -d 6 $PASSAGE_OTP | tr -d '\n'| pbcopy ||
         die "Could not find an otpauth:// entry in $1.age"
@@ -70,8 +67,7 @@ pw_add() {
             dd ibs=1 obs=1 count="${PASSAGE_LENGTH:-17}" 2>/dev/null)
 
     else
-        # 'sread()' is a simple wrapper function around 'read'
-        # to prevent user input from being printed to the terminal.
+
         sread pass  "Enter password"
         sread pass2 "Enter password (again)"
 
@@ -80,8 +76,6 @@ pw_add() {
 
     [ "$pass" ] || die "Failed to generate a password"
 
-    # Mimic the use of an array for storing arguments by... using
-    # the function's argument list. This is very apt isn't it?
     set -- -c
 
     age -r "$pubkey" -o "$name.age" <<-EOF &&
@@ -96,6 +90,7 @@ pw_edit() {
     [ -f "$name.age" ] || die "Failed to access $name"
 
     tmpfile="$(mktemp)"
+    trap "rm -rf '$tmpfile'" EXIT
 
     age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" 2>/dev/null > "$tmpfile" ||
         die "Could not decrypt $1.age"
@@ -106,7 +101,7 @@ pw_edit() {
 
     age -r "$pubkey" -o "$name.age" "$tmpfile"
 
-    rm "$tmpfile"
+    rm -rf "$tmpfile"
 
 }
 
@@ -119,17 +114,28 @@ pw_del() {
 }
 
 pw_git() {
-    case $1 in
-        git)
+    case $2 in
+        push)
             cd "$PASSAGE_DIR"
             shift
-            git "$@"
+            git add . && git commit -m "adding update" && git "$1" origin master
         ;;
-
+        pull)
+            cd "$PASSAGE_DIR"
+            shift
+            git "$1" origin master
+        ;;
+        status)
+            cd "$PASSAGE_DIR"
+            shift
+            git "$1" status
+        ;;
         *)
             command passage "$@"
         ;;
     esac
+
+
 }
 
 pw_gen() {
