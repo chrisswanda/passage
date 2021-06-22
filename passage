@@ -45,14 +45,8 @@ pw_otp() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
-    install $PASSAGE_DIR/$name.age $TMPDIR
-    trap 'rm -rf $tmpdir' EXIT
-    tmpfile="$TMPDIR*.age"
-
-    age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" 2>/dev/null > "$tmpfile" ||
+    PASSAGE_OTP=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth | awk -F '[=|&]' '{print $2}') ||
         die "Could not decrypt $1.age"
-
-    PASSAGE_OTP=$(cat "$tmpfile" | grep otpauth | awk -F '[=|&]' '{print $2}')
 
     oathtool --totp -b -d 6 $PASSAGE_OTP | tr -d '\n'| pbcopy ||
         die "Could not copy $1.age otp"
@@ -63,8 +57,6 @@ pw_otp() {
         sleep "$PAGE_TIMEOUT" || kill 0
         $PAGE_CLIP </dev/null
     } &
-
-    rm $tmpfile
 
     unset PASSAGE_OTP
 }
