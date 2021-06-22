@@ -106,6 +106,8 @@ pw_edit() {
 
     age -r "$pubkey" -o "$name.age" "$tmpfile"
 
+    rm "$tmpfile"
+
 }
 
 pw_del() {
