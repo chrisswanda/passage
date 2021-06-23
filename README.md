@@ -11,7 +11,7 @@ A simple password manager using [age](https://github.com/FiloSottile/age) writte
 
 I am just a ham fisted knucklehead and have never claimed to be a developer.  I have been a long time user of [pass](www.passwordstore.org) and have been following [age](https://github.com/FiloSottile/age) for quite some time.  I have been waiting for Age and Pass to get together at some point, so when I saw `pa` as a pass+age type password manager, figured I would mess around with it for my own purposes.
 
-Changes thus far for my usage are: using `.passage` for storage, I use `~/.config/age` to store my keypairs since they are synced via my personal git repo across multiple machines and `age-keygen` is a password protected file because I do not want to sync my keypairs in plain text, since MacOS does not use `/dev/shm` I added a random `/tmp` directory using OpenSSL, and I am using `pbcopy` since I run MacOS.
+Changes thus far for my usage are: using `.passage` for storage, I use `~/.config/age` to store my keypairs since they are synced via my personal git repo across multiple machines and `age-keygen` is a password protected file because I do not want to sync my keypairs in plain text, and I am using `pbcopy` since I run MacOS.
 
 I'm also throwing in a few scripts that I have used in the past for age encryption and decryption, as I have integrated `age` into my day to day usage.  The gist can be seen here also -> https://gist.github.com/chrisswanda/bc537f87df7ab958773b3dab2d8f1f44
 
