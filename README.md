@@ -20,7 +20,8 @@ I'm also throwing in a few scripts that I have used in the past for age encrypti
 
 - `age`
 - `age-keygen`
-- `oathtool` 
+- `oathtool`
+- `git repository` (optional) 
 
 ## Usage
 
@@ -70,6 +71,8 @@ or add it to your `~.bashrc`
 ### Where are passwords stored?
 
 The passwords are stored in `age` encrypted files located at `${XDG_DATA_HOME:=$HOME/}.passage}`.
+
+If your storage directory is backed by a git repo, you can keep it synchronized using `passage git {push|pull}`.  For my purposes I keep my `.passage` directory sycned up with my personal git repo, and since I am the only person using it, I do not use any branching.  All pushes and pulls are to the master/main branch.  It works for me.  
 
 ### How does the copy command work?
 
