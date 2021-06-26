@@ -9,7 +9,24 @@
 
 # this is where we store our encrypted entries
 PASSAGE_DIR=(~/.passage)
-privkey=(~/.config/age/chrisswanda.priv.age) #This is my default age credential storage location
+
+#This is my default age credential storage location
+privkey=(~/.config/age/chrisswanda.priv.age)
+
+# You could store your private key credentials in MacOS Keychain, as an option:
+# default keychain is /Library/Keychains/login.keychain-db, but you could create a custom
+# keychain in the event you have multiple keys for users, or multiple private keys for work,
+# personal, test, etc...
+#
+# $ security create-keychain Age
+# $ security add-generic-password -a $USER -s passage -w supersecret Age-db
+# $ privkey=$(security find-generic-password -s passage -w)
+# $ echo $privkey
+#   supersecret
+#
+# I have my gpg-agent set for a timeout of 14400 seconds, and could duplicate this if using Keychain
+# $ security set-keychain-settings -lu -t 14400 Age-Db
+#
 
 pw_show() {
     age -i $privkey --decrypt "$1.age" 2>/dev/null ||
@@ -17,8 +34,9 @@ pw_show() {
 }
 
 pw_copy() {
-    # : "${PAGE_CLIP:=xclip -sel c}"
+
     #MacOS doesn't use xclip natively, using pbcopy
+    # : "${PAGE_CLIP:=xclip -sel c}"
 
     pw_show $1 | head -n 1 | tr -d '\n' | pbcopy ||
         die "Could not copy $1.age"
@@ -40,6 +58,9 @@ pw_otp() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
+    # how do you get your otpauth creds? https://linux.die.net/man/1/zbarimg
+    # store the whole otpauth:// URL, or just the token?  Saving the whole URL, makes it portable to other apps
+    # such as Authy or OTP Auth.
     PASSAGE_OTP=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth | awk -F '[=|&]' '{print $2}') ||
         die "Could not decrypt $1.age"
 
@@ -59,6 +80,13 @@ pw_otp() {
 }
 
 pw_add() {
+
+    # investigate adding 'passage add otp' from a QR code
+    # zbarimg is a dependancy
+    # zbarimg -q otpauth_test.png | cut -c 9-
+    # otpauth://totp/ACME%20Co:john@example.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
+
+
     name=$1
 
     if yn "Generate a password?"; then
@@ -89,6 +117,7 @@ pw_edit() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
+    # if using linux, you could use /dev/shm/ instead
     tmpfile="$(mktemp)"
     trap "rm -rf '$tmpfile'" EXIT
 
@@ -141,9 +170,14 @@ pw_git() {
 pw_gen() {
     if yn "$PASSAGE_DIR not detected, generate a new one?"; then
         mkdir -p ~/.passage
-        # use age-keygen -o ~/output for standard key pair that is not encrypted.
+        # use age-keygen -o key.txt for standard key pair that is not encrypted.
+        #
+        # you could store it in your MacOS Keychain, if you do not want to store them in plain text
+        # and adds a level of security.
+        # $ security add-generic-password -a $USER -s passage -w age_private_key
+        #
         # Below is a password protected private key.
-        # I sync my encrypted private key to different machines.
+        # I sync my encrypted private key to different machines, via my personal git repo.
         age-keygen | age -p > $privkey
     fi
 
