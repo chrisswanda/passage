@@ -1,10 +1,9 @@
 # passage - age based password/secrets manager
 
-A simple password manager using [age](https://github.com/FiloSottile/age).  The author pronounces it [aɡe̞], like the Italian “aghe”.
-
-Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
+A simple password manager using [age](https://github.com/FiloSottile/age) written in POSIX `bash`. Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
 
 - Automatically generates an `age` key if one is not detected.
+- Only `120~` LOC (*minus blank lines and comments*).
 - Configurable password generation using `/dev/urandom`.
 - Guards against `set -x`, `ps` and `/proc` leakage.
 - Easily extendible through the shell.
