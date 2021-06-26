@@ -156,7 +156,7 @@ passage() {
 
 Just note that I made this for my MacOS environment.  If you are using some other linux distro, you will need to make a few tweaks.
 
-- For pw_edit(), I am copying to my `$TMPDIR` since MacOS does not have a `/dev/shm` and I sure as hell don't want to make a ram drive.
+- For pw_edit(), I am copying to my `mktemp` since MacOS does not have a `/dev/shm` and I sure as hell don't want to make a ram drive.
 - For pw_copy(), I am using `pbcopy`.  For your linux environment, you can use `xclip`.
 - I am using a password protected private key for my age credentials.  Granted, my hard drive is encrypted and if someone is on my local machine, I have bigger issues.  But, since I sync `~/.config/age` to my personal git repo, I figured might as well keep this key protected since age does not offer forward security.  To generate your password protected age credentials use `age-keygen | age -p > private_key`.
 ```
