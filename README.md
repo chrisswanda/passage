@@ -1,10 +1,9 @@
 # passage - age based password/secrets manager
 
-A simple password manager using [age](https://github.com/FiloSottile/age).  The author pronounces it [aɡe̞], like the Italian “aghe”.
-
-Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
+A simple password manager using [age](https://github.com/FiloSottile/age) written in POSIX `bash`. Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
 
 - Automatically generates an `age` key if one is not detected.
+- Only `120~` LOC (*minus blank lines and comments*).
 - Configurable password generation using `/dev/urandom`.
 - Guards against `set -x`, `ps` and `/proc` leakage.
 - Easily extendible through the shell.
@@ -161,7 +160,7 @@ passage() {
 
 Just note that I made this for my MacOS environment.  If you are using some other linux distro, you will need to make a few tweaks.
 
-- For pw_edit(), I am copying to my `$TMPDIR` since MacOS does not have a `/dev/shm` and I sure as hell don't want to make a ram drive.
+- For pw_edit(), I am copying to `mktemp` since MacOS does not have a `/dev/shm` and I sure as hell don't want to make a ram drive.
 - For pw_copy(), I am using `pbcopy`.  For your linux environment, you can use `xclip`.
 - I am using a password protected private key for my age credentials.  Granted, my hard drive is encrypted and if someone is on my local machine, I have bigger issues.  But, since I sync `~/.config/age` to my personal git repo, I figured might as well keep this key protected since age does not offer forward security.  To generate your password protected age credentials use `age-keygen | age -p > private_key`.
 ```
