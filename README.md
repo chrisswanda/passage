@@ -22,33 +22,36 @@ I'm also throwing in a few scripts that I have used in the past for age encrypti
 - `age`
 - `age-keygen`
 - `oathtool`
+- `qrencode`
 - `git repository` (optional) 
 
 ## Usage
 
 Examples: 
 ```
-  passage show github
-  passage copy Travel/Uber
-  passage otp  Development/Github
+  passage show   github
+  passage copy   Travel/Uber
+  passage otp    Development/Github
+  passage qrcode Foo/bar
   passage list
-  passage add Web/gmail
-  passage edit Finance/ETrade
-  passage del Social/Facebook
-  passage git {pull}{push}{status}
+  passage add    Web/gmail
+  passage edit   Finance/ETrade
+  passage del    Social/Facebook
+  passage git    {pull}{push}{status}
   ```
 
 ```
 USAGE
 
-- show [name]    - Show password for an entry.
-- copy [name]    - Copy password to clipboard. Clears in 30 seconds.
-- otp  [name]    - Copy OTP to clipboard. Clears in 30 seconds.
-- list           - List all entries.
-- add  [name]    - Create a new password, randomly generated.
-- edit [name]    - Edit a password entry with vim.
-- del  [name]    - Delete a password entry.
-- git  [command] - push, pull, status, add, commit
+- show   [name]    - Show password for an entry.
+- copy   [name]    - Copy password to clipboard. Clears in 30 seconds.
+- otp    [name]    - Copy OTP to clipboard. Clears in 30 seconds.
+- qrcode [name]    - Display stored otpauth:// as qrcode.
+- list             - List all entries.
+- add    [name]    - Create a new password, randomly generated.
+- edit   [name]    - Edit a password entry with vim.
+- del    [name]    - Delete a password entry.
+- git    [command] - push, pull, status, add, commit
 ```
 
 I have included something that resembles autocomplete.
