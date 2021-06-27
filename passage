@@ -9,7 +9,9 @@
 
 # this is where we store our encrypted entries
 PASSAGE_DIR=(~/.passage)
+
 privkey=(~/.config/age/chrisswanda.priv.age) #This is my default age credential storage location
+
 
 pw_show() {
     age -i $privkey --decrypt "$1.age" 2>/dev/null ||
@@ -41,7 +43,7 @@ pw_otp() {
     [ -f "$name.age" ] || die "Failed to access $name"
 
     PASSAGE_OTP=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth | awk -F '[=|&]' '{print $2}') ||
-        die "Could not decrypt $1.age"
+        die "Could not find an otpauth:// entry in $1.age"
 
     trap "unset PASSAGE_OTP" EXIT
 
@@ -56,6 +58,25 @@ pw_otp() {
     } &
 
     unset PASSAGE_OTP
+}
+
+pw_qrcode() {
+    name=$1
+
+    [ -f "$name.age" ] || die "Failed to access $name"
+
+    # how do you get your otpauth creds? https://linux.die.net/man/1/zbarimg
+    # store the whole otpauth:// URL, or just the token?  Saving the whole URL, makes it portable to other apps
+    # such as Authy or OTP Auth.
+    PASSAGE_QR=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth) ||
+        die "Could not find an otpauth:// entry in $1.age"
+
+    trap "unset PASSAGE_QR" EXIT
+
+    qrencode $PASSAGE_QR -t ansiutf8 -o - ||
+        die "Could not find an otpauth:// entry in $1.age"
+
+    unset PASSAGE_QR
 }
 
 pw_add() {
@@ -141,6 +162,7 @@ pw_git() {
 pw_gen() {
     if yn "$PASSAGE_DIR not detected, generate a new one?"; then
         mkdir -p ~/.passage
+
         # use age-keygen -o ~/output for standard key pair that is not encrypted.
         # Below is a password protected private key.
         # I sync my encrypted private key to different machines.
@@ -202,14 +224,15 @@ die() {
 }
 
 usage() { printf %s "\
-- show [name]    - Show password for an entry.
-- copy [name]    - Copy password to clipboard. Clears in 30 seconds.
-- otp  [name]    - Copy OTP code to clipbaord. Clears in 30 seconds.
-- list           - List all entries.
-- add  [name]    - Create a new password, randomly generated.
-- edit [name]    - Edit a password entry using your editor.
-- del  [name]    - Delete a password entry.
-- git  [command] - push, pull, status, add, commit
+- show   [name]    - Show password for an entry.
+- copy   [name]    - Copy password to clipboard. Clears in 30 seconds.
+- otp    [name]    - Copy OTP code to clipbaord. Clears in 30 seconds.
+- qrcode [name]    - Display stored otpauth:// as qrcode.
+- list             - List all entries.
+- add    [name]    - Create a new password, randomly generated.
+- edit   [name]    - Edit a password entry using your editor.
+- del    [name]    - Delete a password entry.
+- git    [command] - push, pull, status, add, commit
 "
 exit 0
 }
@@ -259,15 +282,16 @@ main() {
     [ -t 1 ] && trap 'stty echo icanon' INT EXIT
 
     case $1 in
-        show) pw_show  "$2"       ;;
-        copy) pw_copy  "$2"       ;;
-        otp)  pw_otp   "$2"       ;;
-        list) pw_list             ;;
-        add)  pw_add   "$2"       ;;
-        edit) pw_edit  "$2"       ;;
-        del)  pw_del   "$2"       ;;
-        git)  pw_git   "$@"       ;;
-        *)    usage               ;;
+        show)   pw_show   "$2"    ;;
+        copy)   pw_copy   "$2"    ;;
+        otp)    pw_otp    "$2"    ;;
+        qrcode) pw_qrcode "$2"    ;;
+        list)   pw_list           ;;
+        add)    pw_add    "$2"    ;;
+        edit)   pw_edit   "$2"    ;;
+        del)    pw_del    "$2"    ;;
+        git)    pw_git    "$@"    ;;
+        *)      usage             ;;
     esac
 }
 

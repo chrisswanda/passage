@@ -76,7 +76,7 @@ _passage()
 {
 	COMPREPLY=()
 	local cur="${COMP_WORDS[COMP_CWORD]}"
-	local commands="show  copy  otp  list  add  edit  del  git"
+	local commands="show  copy  otp  qrcode list  add  edit  del  git"
 	if [[ $COMP_CWORD -gt 1 ]]; then
 		local lastarg="${COMP_WORDS[$COMP_CWORD-1]}"
 		case "${COMP_WORDS[1]}" in
@@ -99,6 +99,10 @@ _passage()
 				;;
 			otp|-*)
 				COMPREPLY+=($(compgen -W "otp" -- ${cur}))
+				_passage_complete_entries 1
+				;;
+			qrcode|-*)
+				COMPREPLY+=($(compgen -W "qrcode" -- ${cur}))
 				_passage_complete_entries 1
 				;;
 			edit|-*)
