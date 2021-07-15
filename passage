@@ -10,8 +10,8 @@
 # this is where we store our encrypted entries
 PASSAGE_DIR=(~/.passage)
 
-privkey=(~/.config/age/chrisswanda.priv.age) #This is my default age credential storage location
-
+#This is my default age credential storage location
+privkey=(~/.config/age/chrisswanda.priv.age)
 
 pw_show() {
     age -i $privkey --decrypt "$1.age" 2>/dev/null ||
@@ -19,8 +19,9 @@ pw_show() {
 }
 
 pw_copy() {
-    # : "${PAGE_CLIP:=xclip -sel c}"
+
     #MacOS doesn't use xclip natively, using pbcopy
+    # : "${PAGE_CLIP:=xclip -sel c}"
 
     pw_show $1 | head -n 1 | tr -d '\n' | pbcopy ||
         die "Could not copy $1.age"
@@ -42,6 +43,9 @@ pw_otp() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
+    # how do you get your otpauth creds? https://linux.die.net/man/1/zbarimg
+    # store the whole otpauth:// URL, or just the token?  Saving the whole URL, makes it portable to other apps
+    # such as Authy or OTP Auth.
     PASSAGE_OTP=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth | awk -F '[=|&]' '{print $2}') ||
         die "Could not find an otpauth:// entry in $1.age"
 
@@ -80,6 +84,12 @@ pw_qrcode() {
 }
 
 pw_add() {
+
+    # investigate adding 'passage add otp' from a QR code
+    # zbarimg is a dependancy
+    # zbarimg -q otpauth_test.png | cut -c 9-
+    # otpauth://totp/ACME%20Co:john@example.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
+
     name=$1
 
     if yn "Generate a password?"; then
@@ -110,6 +120,7 @@ pw_edit() {
 
     [ -f "$name.age" ] || die "Failed to access $name"
 
+    # if using linux, you could use /dev/shm/ instead
     tmpfile="$(mktemp)"
     trap "rm -rf '$tmpfile'" EXIT
 
@@ -139,7 +150,7 @@ pw_git() {
         push)
             cd "$PASSAGE_DIR"
             shift
-            git add . && git commit -m "adding update" && git "$1" origin master
+            git commit -am "adding update" && git "$1" origin master
         ;;
         pull)
             cd "$PASSAGE_DIR"
@@ -156,16 +167,15 @@ pw_git() {
         ;;
     esac
 
-
 }
 
 pw_gen() {
     if yn "$PASSAGE_DIR not detected, generate a new one?"; then
         mkdir -p ~/.passage
+        # use age-keygen -o key.txt for standard key pair that is not encrypted.
 
-        # use age-keygen -o ~/output for standard key pair that is not encrypted.
         # Below is a password protected private key.
-        # I sync my encrypted private key to different machines.
+        # I sync my encrypted private key to different machines, via my personal git repo.
         age-keygen | age -p > $privkey
     fi
 
