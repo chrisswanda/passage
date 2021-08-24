@@ -1,0 +1,316 @@
+#!/bin/bash
+#
+# passage - age based password/secrets manager
+# Original script is from https://github.com/dylanaraps/pash
+# and the credit goes to https://github.com/biox/pa for using age
+# for the encryption.
+#
+# This is my version for my own experimentation and implementation.
+
+# this is where we store our encrypted entries
+PASSAGE_DIR=(~/.passage)
+
+#This is my default age credential storage location
+privkey=(~/.config/age/chrisswanda.priv.age)
+
+pw_show() {
+    age -d $privkey | age -d -i - -o - "$1.age" 2>/dev/null ||
+        die "Could not decrypt $1.age"
+}
+
+pw_copy() {
+
+    #MacOS doesn't use xclip natively, using xclip
+    # : "${PAGE_CLIP:=xclip -sel c}"
+
+    pw_show $1 | head -n 1 | tr -d '\n' | xclip ||
+        die "Could not copy $1.age"
+
+    [ "$PAGE_TIMEOUT" != off ] && {
+        printf 'Clearing clipboard in %s seconds.\n' "${PAGE_TIMEOUT:=30}"
+
+        sleep "$PAGE_TIMEOUT" || kill 0
+        $PAGE_CLIP </dev/null
+    } &
+}
+
+pw_list() {
+    tree -C --noreport | sed 's/\.age$//'
+}
+
+pw_otp() {
+    name=$1
+
+    [ -f "$name.age" ] || die "Failed to access $name"
+
+    # how do you get your otpauth creds? https://linux.die.net/man/1/zbarimg
+    # store the whole otpauth:// URL, or just the token?  Saving the whole URL, makes it portable to other apps
+    # such as Authy or OTP Auth.
+    PASSAGE_OTP=$(age -d $privkey | age -d -i - -o - "$PASSAGE_DIR/$1.age" | grep otpauth | awk -F '[=|&]' '{print $2}') ||
+        die "Could not find an otpauth:// entry in $1.age"
+
+    trap "unset PASSAGE_OTP" EXIT
+
+    oathtool --totp -b -d 6 $PASSAGE_OTP | tr -d '\n'| xclip -selection clipboard ||
+        die "Could not find an otpauth:// entry in $1.age"
+
+    [ "$PAGE_TIMEOUT" != off ] && {
+        printf 'Clearing clipboard in %s seconds.\n' "${PAGE_TIMEOUT:=30}"
+
+        sleep "$PAGE_TIMEOUT" || kill 0
+        $PAGE_CLIP </dev/null
+    } &
+
+    unset PASSAGE_OTP
+}
+
+pw_qrcode() {
+    name=$1
+
+    [ -f "$name.age" ] || die "Failed to access $name"
+
+    # how do you get your otpauth creds? https://linux.die.net/man/1/zbarimg
+    # store the whole otpauth:// URL, or just the token?  Saving the whole URL, makes it portable to other apps
+    # such as Authy or OTP Auth.
+    PASSAGE_QR=$(age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" | grep otpauth) ||
+        die "Could not find an otpauth:// entry in $1.age"
+
+    trap "unset PASSAGE_QR" EXIT
+
+    qrencode $PASSAGE_QR -t ansiutf8 -o - ||
+        die "Could not find an otpauth:// entry in $1.age"
+
+    unset PASSAGE_QR
+}
+
+pw_add() {
+
+    # investigate adding 'passage add otp' from a QR code
+    # zbarimg is a dependancy
+    # zbarimg -q otpauth_test.png | cut -c 9-
+    # otpauth://totp/ACME%20Co:john@example.com?secret=HXDMVJECJJWSRB3HWIZR4IFUGFTMXBOZ&issuer=ACME%20Co&algorithm=SHA1&digits=6&period=30
+
+    name=$1
+
+    if yn "Generate a password?"; then
+
+        pass=$(LC_ALL=C tr -dc "${PASSAGE_PATTERN:-_A-Z-a-z-0-9}" < /dev/urandom |
+            dd ibs=1 obs=1 count="${PASSAGE_LENGTH:-17}" 2>/dev/null)
+
+    else
+
+        sread pass  "Enter password"
+        sread pass2 "Enter password (again)"
+
+        [ "$pass" = "$pass2" ] || die "Passwords do not match"
+    fi
+
+    [ "$pass" ] || die "Failed to generate a password"
+
+    set -- -c
+
+    age -r "$pubkey" -o "$name.age" <<-EOF &&
+		$pass
+	EOF
+    printf '%s\n' "Saved '$name' to the password store."
+}
+
+pw_edit() {
+    name=$1
+
+    [ -f "$name.age" ] || die "Failed to access $name"
+
+    # if using linux, you could use /dev/shm/ instead
+    tmpfile="$(/dev/shm)"
+    trap "rm -rf '$tmpfile'" EXIT
+
+    age -i $privkey --decrypt "$PASSAGE_DIR/$1.age" 2>/dev/null > "$tmpfile" ||
+        die "Could not decrypt $1.age"
+
+    "${EDITOR:-vi}" "$tmpfile"
+
+    [ -f "$tmpfile" ] || die "New password not saved"
+
+    age -r "$pubkey" -o "$name.age" "$tmpfile"
+
+    rm -rf "$tmpfile"
+
+}
+
+pw_del() {
+    yn "Delete pass file '$1'?" && {
+        rm -f "$1.age"
+
+        rmdir -p "${1%/*}" 2>/dev/null || :
+    }
+}
+
+pw_git() {
+    case $2 in
+        push)
+            cd "$PASSAGE_DIR"
+            shift
+            git commit -am "adding update" && git "$1" origin master
+        ;;
+        pull)
+            cd "$PASSAGE_DIR"
+            shift
+            git "$1" origin master
+        ;;
+        status)
+            cd "$PASSAGE_DIR"
+            shift
+            git "$1" status
+        ;;
+        *)
+            command passage "$@"
+        ;;
+    esac
+
+}
+
+pw_gen() {
+    if yn "$PASSAGE_DIR not detected, generate a new one?"; then
+        mkdir -p ~/.passage
+        # use age-keygen -o key.txt for standard key pair that is not encrypted.
+
+        # Below is a password protected private key.
+        # I sync my encrypted private key to different machines, via my personal git repo.
+        age-keygen | age -p > $privkey
+    fi
+
+}
+
+yn() {
+    printf '%s [y/n]: ' "$1"
+
+    # Enable raw input to allow for a single byte to be read from
+    # stdin without needing to wait for the user to press Return.
+    stty -icanon
+
+    # Read a single byte from stdin using 'dd'. POSIX 'read' has
+    # no support for single/'N' byte based input from the user.
+    answer=$(dd ibs=1 count=1 2>/dev/null)
+
+    # Disable raw input, leaving the terminal how we *should*
+    # have found it.
+    stty icanon
+
+    printf '\n'
+
+    # Handle the answer here directly, enabling this function's
+    # return status to be used in place of checking for '[yY]'
+    # throughout this program.
+    glob "$answer" '[yY]'
+}
+
+sread() {
+    printf '%s: ' "$2"
+
+    # Disable terminal printing while the user inputs their
+    # password. POSIX 'read' has no '-s' flag which would
+    # effectively do the same thing.
+    stty -echo
+    read -r "$1"
+    stty echo
+
+    printf '\n'
+}
+
+glob() {
+    # This is a simple wrapper around a case statement to allow
+    # for simple string comparisons against globs.
+    #
+    # Example: if glob "Hello World" '* World'; then
+    #
+    # Disable this warning as it is the intended behavior.
+    # shellcheck disable=2254
+    case $1 in $2) return 0; esac; return 1
+}
+
+die() {
+    printf 'error: %s.\n' "$1" >&2
+    exit 1
+}
+
+usage() { printf %s "\
+- show   [name]    - Show password for an entry.
+- copy   [name]    - Copy password to clipboard. Clears in 30 seconds.
+- otp    [name]    - Copy OTP code to clipbaord. Clears in 30 seconds.
+- qrcode [name]    - Display stored otpauth:// as qrcode.
+- list             - List all entries.
+- add    [name]    - Create a new password, randomly generated.
+- edit   [name]    - Edit a password entry using your editor.
+- del    [name]    - Delete a password entry.
+- git    [command] - push, pull, status, add, commit
+"
+exit 0
+}
+
+main() {
+    : "${PASSAGE_DIR:=${XDG_DATA_HOME:=$HOME/}.passage}"
+
+    command -v age >/dev/null 2>&1 ||
+        die "age not found, install per https://github.com/FiloSottile/age"
+
+    command -v age-keygen >/dev/null 2>&1 ||
+        die "age-keygen not found, install per https://github.com/FiloSottile/age"
+
+    mkdir -p "$PASSAGE_DIR" ||
+        die "Couldn't create password directory"
+
+    cd "$PASSAGE_DIR" ||
+        die "Can't access password directory"
+
+    glob "$1" '[acdes]*' && [ -z "$2" ] &&
+        die "Missing [name] argument"
+
+    glob "$1" '[cds]*' && [ ! -f "$2.age" ] &&
+        die "Pass file '$2' doesn't exist"
+
+    glob "$1" 'a*' && [ -f "$2.age" ] &&
+        die "Pass file '$2' already exists"
+
+    glob "$2" '*/*' && glob "$2" '*../*' &&
+        die "Category went out of bounds"
+
+    glob "$2" '/*' &&
+        die "Category can't start with '/'"
+
+    glob "$2" '*/*' && { mkdir -p "${2%/*}" ||
+        die "Couldn't create category '${2%/*}'"; }
+
+    # Restrict permissions of any new files to
+    # only the current user.
+    umask 077
+
+    [ -f $privkey ] || pw_gen
+    pubkey=$(cat ~/.config/age/chrisswanda.pub.age)
+
+    # Ensure that we leave the terminal in a usable
+    # state on exit or Ctrl+C.
+    [ -t 1 ] && trap 'stty echo icanon' INT EXIT
+
+    case $1 in
+        show)   pw_show   "$2"    ;;
+        copy)   pw_copy   "$2"    ;;
+        otp)    pw_otp    "$2"    ;;
+        qrcode) pw_qrcode "$2"    ;;
+        list)   pw_list           ;;
+        add)    pw_add    "$2"    ;;
+        edit)   pw_edit   "$2"    ;;
+        del)    pw_del    "$2"    ;;
+        git)    pw_git    "$@"    ;;
+        *)      usage             ;;
+    esac
+}
+
+# Ensure that debug mode is never enabled to
+# prevent the password from leaking.
+set +x
+
+# Ensure that globbing is globally disabled
+# to avoid insecurities with word-splitting.
+set -f
+
+[ "$1" ] || usage && main "$@"
