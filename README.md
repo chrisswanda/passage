@@ -2,7 +2,7 @@
 
 UPDATE - it appears the author of Age has forked pass to use Age as a backend, versus GPG.  https://github.com/FiloSottile/passage. I have converted my personal comuters/machines to use it.  I am no longer going to mess with my janky version.
 
-If you have used this projet to manage passwords using Age and would like to convert over to FiloSottile's do the following:
+If you have used this project to manage passwords using Age and would like to convert over to FiloSottile's do the following:
 
 - delete /usr/local/bin/passage
 - copy your age pub key to .passage/store/.age-recipients
