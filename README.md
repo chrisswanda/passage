@@ -1,5 +1,7 @@
 # passage - age based password/secrets manager
 
+UPDATE - it appears the author of Age has forked pass to use Age as a backend, versus GPG.  https://github.com/FiloSottile/passage
+
 A simple password manager using [age](https://github.com/FiloSottile/age) written in POSIX `bash`. Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
 
 - Automatically generates an `age` key if one is not detected.
