@@ -10,7 +10,7 @@ If you have used this projet to manage passwords using Age and would like to con
 - edit /usr/local/etc/bash_completion.d/passage_autocomplete, so that your PASSWORD_STORE_DIR has `/store` in the path. `local prefix="${PASSWORD_STORE_DIR:-$HOME/.passage/store/}"`
 - - git clone https://github.com/FiloSottile/passage
 - follow the INSTALL
-- things should just work.  Or at least on my two machines they do.
+- things should just work.  Or at least on my two machines they do.  If you are having issues with `passage git` commands, do mv `~/.passage/.git` to `~/.passage/store/` and passage git commands should use what you set up prior.
 
 A simple password manager using [age](https://github.com/FiloSottile/age) written in POSIX `bash`. Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
 
