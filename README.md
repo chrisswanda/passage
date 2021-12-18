@@ -1,6 +1,16 @@
 # passage - age based password/secrets manager
 
-UPDATE - it appears the author of Age has forked pass to use Age as a backend, versus GPG.  https://github.com/FiloSottile/passage
+UPDATE - it appears the author of Age has forked pass to use Age as a backend, versus GPG.  https://github.com/FiloSottile/passage. I have converted my project to use it.
+
+If you have used this projet to manage passwords using Age and would like to convert over to FiloSottile's do the following:
+
+- delete /usr/local/bin/passage
+- copy your age pub key to .passage/store/.age-recipients
+- copy your age private key to .passage/identities 
+- edit /usr/local/etc/bash_completion.d/passage_autocomplete, so that your PASSWORD_STORE_DIR has `/store` in the path. `local prefix="${PASSWORD_STORE_DIR:-$HOME/.passage/store/}"`
+- - git clone https://github.com/FiloSottile/passage
+- follow the INSTALL
+- things should just work.  Or at least on my two machines they do.
 
 A simple password manager using [age](https://github.com/FiloSottile/age) written in POSIX `bash`. Based on [pash](https://github.com/dylanaraps/pash) by [dylanaraps](https://github.com/dylanaraps). I forked this project from [pa](https://github.com/biox/pa) by [biox](https://github.com/biox/).  Also, this implementation of passage has nothing to do with [passage](https://github.com/stchris/passage) which was based on Rust and that project appears to be archived.
 
